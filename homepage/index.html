@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReGE: Stronger Agents through Experience Synthesis</title>
+  <meta name="description" content="ReGE turns an agent's own recorded attempts into guidance for a fresh attempt by the same model. With it, gpt-5.6-luna matches the task success of gpt-5.6-sol at 28% of its cost, and one coach call replaces iterative aggregation.">
+  <link rel="canonical" href="https://tiger-ai-lab.github.io/ReGE/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ReGE: Stronger Agents through Experience Synthesis">
+  <meta property="og:description" content="ReGE turns an agent's recorded attempts into guidance for a fresh attempt by the same model: +9.9 points of task success on four agent benchmarks, and gpt-5.6-luna matches gpt-5.6-sol at 28% of its cost.">
+  <meta property="og:url" content="https://tiger-ai-lab.github.io/ReGE/">
+  <meta property="og:image" content="https://tiger-ai-lab.github.io/ReGE/static/images/teaser.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#be3455">
+  <link rel="icon" href="static/images/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+  <link rel="stylesheet" href="static/css/style.css">
+  <script>
+    try {
+      var saved = localStorage.getItem("rege-theme");
+      if (saved === "light" || saved === "dark") document.documentElement.setAttribute("data-theme", saved);
+    } catch (e) {}
+  </script>
+</head>
+<body>
+
+<nav class="nav" aria-label="Main">
+  <div class="container nav-inner">
+    <a class="brand" href="#top"><img src="static/images/favicon.svg" alt="" width="26" height="26">ReGE</a>
+    <div class="nav-links">
+      <a class="optional" href="#abstract">Abstract</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a class="optional" href="#findings">Findings</a>
+      <a class="optional" href="#cases">Cases</a>
+      <a class="optional" href="#citation">BibTeX</a>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Toggle dark mode">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.4A8.5 8.5 0 0 1 9.6 3.5a8.5 8.5 0 1 0 10.9 10.9z"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="container">
+    <a class="news" href="https://arxiv.org/abs/2610.33861"><span class="tag">New</span>Paper on arXiv and code released<span class="arrow" aria-hidden="true">→</span></a>
+    <h1><span class="name">ReGE</span>: Stronger Agents through Experience Synthesis</h1>
+    <p class="authors">
+      <span><a href="https://dream233.github.io/">Jiarong Liang</a><sup>1</sup></span><wbr><span>Yubo Wang<sup>1</sup></span><wbr><span>Zijie Liu<sup>2</sup></span><wbr><span>Yuxuan Zhang<sup>3</sup></span><wbr><span>Ping Nie<sup>1</sup></span><wbr><span><a href="https://wenhuchen.github.io/">Wenhu Chen</a><sup>1</sup></span>
+    </p>
+    <p class="affil"><span><sup>1</sup>University of Waterloo</span><span><sup>2</sup>University of North Carolina at Chapel Hill</span><span><sup>3</sup>University of British Columbia</span></p>
+    <div class="links">
+      <!-- TODO: replace the X and LinkedIn links with the announcement posts (also in README.md). -->
+      <a class="btn btn-ink" href="https://arxiv.org/pdf/2610.33861">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Paper</a>
+      <a class="btn" href="https://arxiv.org/abs/2610.33861">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.5h6a4 4 0 0 1 4 4V20a3 3 0 0 0-3-3H2z"/><path d="M22 4.5h-6a4 4 0 0 0-4 4V20a3 3 0 0 1 3-3h7z"/></svg>arXiv</a>
+      <a class="btn" href="https://github.com/TIGER-AI-Lab/ReGE">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Code</a>
+      <a class="btn" href="https://x.com/TODO">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>X</a>
+      <a class="btn" href="https://www.linkedin.com/TODO">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.4 7.6a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2zM3.6 9h3.6v11.5H3.6zM9.4 9h3.5v1.6h.05c.5-.9 1.7-1.9 3.5-1.9 3.7 0 4.4 2.4 4.4 5.6v6.2h-3.6v-5.5c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9v5.6H9.4z"/></svg>LinkedIn</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="section tight-top" aria-label="Teaser">
+    <div class="container">
+      <div class="teaser">
+        <figure class="figure">
+          <a class="zoom" href="static/images/teaser.png" aria-label="Open the full-size figure"><img src="static/images/teaser.png" width="1680" height="1380"
+               alt="Task success against list-price cost per task, averaged over 468 tasks of four benchmarks: gpt-5.6-luna with ReGE reaches 67.4% at $0.214 per task, gpt-5.6-sol 67.0% at $0.766, gpt-5.6-terra 63.9% at $0.370 and gpt-6-luna 49.4% at $0.009."></a>
+        </figure>
+        <div class="teaser-text">
+          <h2>With ReGE, <span class="nowrap">gpt-5.6-luna</span> matches <span class="nowrap">gpt-5.6-sol</span> at <em>28%</em> of its cost</h2>
+          <p>Guided by its own recorded attempts, the lower-priced model reaches the task success of a higher-priced model of its family. Costs include generating the source pool.</p>
+          <div class="kv">
+            <div><b>67.4% vs 67.0%</b><span>average task success of <code>gpt-5.6-luna</code> with ReGE and of <code>gpt-5.6-sol</code></span></div>
+            <div><b>$0.214 vs $0.766</b><span>list-price cost per task, including the four source attempts of ReGE</span></div>
+            <div><b>$0.034</b><span>per task for ReGE when the source pool already exists, close to the $0.041 of one unguided <code>gpt-5.6-luna</code> run</span></div>
+          </div>
+          <p class="chart-note">Figure 1 of the paper: averages over 468 tasks of Terminal-Bench 2.0, Spider2-Lite, AndroidWorld and BrowseComp-Plus. <a href="#other-models">Results per benchmark (Table 5) →</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight-top" aria-label="Summary">
+    <div class="container">
+      <p class="tldr">ReGE turns an agent's own recorded attempts into guidance for a fresh attempt. In its main implementation, <em>one coach call synthesizes what the attempts found, what worked and what failed</em>, and the same model then re-executes the task from its initial state.</p>
+      <div class="stats">
+        <div class="stat"><div class="value">+9.9 <small>pp</small></div><div class="label">mean gain in task success over unguided execution with <code>gpt-5.6-luna</code> across four benchmarks (+8.8 with <code>claude-sonnet-5</code>)</div></div>
+        <div class="stat"><div class="value">−98.2%</div><div class="label">guidance-construction tokens versus adapted AggAgent on matched BrowseComp-Plus queries with GPT (−95.5% with Claude)</div></div>
+        <div class="stat"><div class="value">−35.4%</div><div class="label">construction plus execution tokens versus AggAgent with Claude (−15.7% with GPT), excluding source generation</div></div>
+        <div class="stat"><div class="value">1 call</div><div class="label">of the ReGE-Syn coach turns four recorded attempts into self-contained guidance, with the same base model and no parameter updates</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="abstract">
+    <div class="container prose">
+      <div class="eyebrow">Abstract</div>
+      <h2>How can an agent turn its own attempts into better execution?</h2>
+      <div class="abstract">
+        <p>Repeated attempts at interactive tasks uncover facts, useful operations, and failures that can inform subsequent execution. We introduce ReGE, a framework for turning this recorded experience into guidance for a fresh attempt. Its main implementation, ReGE-Syn, uses a single coach call to jointly synthesize bounded execution records and available artifacts into self-contained guidance, connecting task-specific findings with proposed actions and relevant pitfalls. A student starts from the task's initial environment state and adapts this guidance to current observations. Source generation, synthesis, and student execution use the same base model, without parameter updates or a stronger teacher. Across four benchmarks, ReGE improves accuracy by an average of 9.9 percentage points for GPT and 8.8 percentage points for Claude compared with unguided execution. On matched BrowseComp-Plus subsets, ReGE-Syn reduces guidance-construction tokens by 98.2% on GPT and 95.5% on Claude relative to adapted AggAgent, with observed success. Combined construction and execution tokens decrease by 15.7% and 35.4%, respectively, counting input plus output and excluding source generation. BrowseComp-Plus ablations further associate access to process information with fewer student steps and show that joint synthesis produces substantially shorter guidance than Direct history or Independent summaries, with observed success. These results demonstrate how agents can use their own recorded experience to improve subsequent task completion, and suggest a low-cost way to consolidate the execution records of parallel agent systems such as agent swarms.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="method">
+    <div class="container">
+      <div class="eyebrow"><span class="num">01</span>Method</div>
+      <h2>Record, synthesize, re-execute</h2>
+      <p class="lede">ReGE (<em>Re-execution Guided by Experience</em>) needs only the agent's recorded attempts at a task. The guidance is built without correctness labels, and the student re-executes the task in a fresh environment with the same base model.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="k"><b>1</b>Record</div>
+          <h3>Attempts form a source pool</h3>
+          <p>The model attempts the task four times. Each attempt is rendered as text without any LLM summary: reasoning or action narratives and commands in step order, then the final artifacts, such as files, SQL results or a submitted answer. Correctness labels and raw observations are left out, and long fields are truncated.</p>
+        </div>
+        <div class="step">
+          <div class="k"><b>2</b>Synthesize</div>
+          <h3>One coach call writes the guidance</h3>
+          <p>A coach reads all attempts together and writes a plan in execution order, placing the exact paths, values, commands and formats the attempts uncovered at the steps where they matter, along with the pitfalls they exposed. When the records support a candidate answer or artifact, the plan states it with a way to verify it.</p>
+        </div>
+        <div class="step">
+          <div class="k"><b>3</b>Re-execute</div>
+          <h3>A fresh student acts on it</h3>
+          <p>The student starts from the task's initial state with the instruction and the guidance. Files and state from the earlier attempts do not carry over, so it adopts, adjusts or skips each proposed operation against what it observes, and the benchmark grades the result.</p>
+        </div>
+      </div>
+
+      <figure class="figure">
+        <a class="zoom" href="static/images/pipeline.png" aria-label="Open the full-size figure"><img src="static/images/pipeline.png" width="2756" height="789"
+             alt="ReGE pipeline. An LLM makes K attempts at task x and the trajectories are collected into a pool P. A coach reads the task and the pool and synthesizes guidance g with facts (what was found), operations (what worked), pitfalls (what failed) and artifacts (useful outputs). A student starts from the task's initial state s0 in a web, terminal, file or app environment, receives g and acts on its own observations; the benchmark grades the new state on Terminal-Bench 2.0, Spider2-Lite, AndroidWorld and BrowseComp-Plus."></a>
+        <figcaption><b>The joint-synthesis implementation of ReGE.</b>
+          The coach reads the rendered source pool, the recorded attempts at the task, and writes guidance in one call.
+          The student receives the guidance and interacts with its own environment from the task's initial state.
+          Source generation, synthesis and execution share the same base model.</figcaption>
+      </figure>
+
+      <div class="sub-head">
+        <h3>How ReGE-Syn differs from other aggregation methods</h3>
+        <p>Table 1 of the paper.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th scope="col">Criterion</th>
+              <th scope="col">SC (source)</th>
+              <th scope="col">Self-MoA</th>
+              <th scope="col">Reflexion</th>
+              <th scope="col">Agentic PDR</th>
+              <th scope="col">AggAgent</th>
+              <th scope="col" class="ours">ReGE-Syn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Single-pass synthesis</td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark yes" aria-label="yes">✓</span></td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark no" aria-label="no">×</span></td><td class="ours"><span class="mark yes" aria-label="yes">✓</span></td></tr>
+            <tr><td>Trajectory information</td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark yes" aria-label="yes">✓</span></td><td><span class="mark yes" aria-label="yes">✓</span></td><td><span class="mark yes" aria-label="yes">✓</span></td><td class="ours"><span class="mark yes" aria-label="yes">✓</span></td></tr>
+            <tr><td>Student rerun</td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark no" aria-label="no">×</span></td><td><span class="mark yes" aria-label="yes">✓</span></td><td><span class="mark yes" aria-label="yes">✓</span></td><td><span class="mark no" aria-label="no">×</span></td><td class="ours"><span class="mark yes" aria-label="yes">✓</span></td></tr>
+            <tr><td>Aggregation calls</td><td>0</td><td>1</td><td>Iterative</td><td><i>K</i></td><td>Iterative</td><td class="ours">1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="chart-note">Aggregation calls count model calls that combine source attempts (reflection calls for Reflexion), excluding source generation and task execution; <i>K</i> is the number of source attempts.</p>
+    </div>
+  </section>
+
+  <section class="section alt" id="results">
+    <div class="container">
+      <div class="eyebrow"><span class="num">02</span>Results</div>
+      <h2>Recorded experience strengthens the same model</h2>
+      <p class="lede">We evaluate on Terminal-Bench 2.0, Spider2-Lite, AndroidWorld and BrowseComp-Plus with <code>gpt-5.6-luna</code> and <code>claude-sonnet-5</code>. Each task has four source attempts by the same model; ReGE and AggAgent use the same pools, and each gets one fresh student execution under the benchmark's step limit.</p>
+
+      <div class="sub-head">
+        <h3>Task success</h3>
+      </div>
+      <div class="card">
+        <div class="card-top">
+          <div class="legend" aria-hidden="true">
+            <span class="key"><span class="swatch ours"></span>ReGE</span>
+            <span class="key"><span class="swatch base"></span>Baseline</span>
+            <span class="key"><span class="swatch ctl"></span>Control (unguided)</span>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Model for the task-success chart">
+            <button class="tab" role="tab" type="button" data-line="gpt" aria-selected="true"><code>gpt-5.6-luna</code></button>
+            <button class="tab" role="tab" type="button" data-line="claude" aria-selected="false"><code>claude-sonnet-5</code></button>
+          </div>
+        </div>
+        <div class="multiples">
+          <div class="panel"><p class="panel-title">Terminal-Bench 2.0 <span>· 89 tasks</span></p><div class="chart" data-chart="acc" data-bench="tb2"></div></div>
+          <div class="panel"><p class="panel-title">Spider2-Lite <span>· 135 instances</span></p><div class="chart" data-chart="acc" data-bench="spider"></div></div>
+          <div class="panel"><p class="panel-title">AndroidWorld <span class="aw-n">· 342 instances</span></p><div class="chart" data-chart="acc" data-bench="aw"></div></div>
+          <div class="panel"><p class="panel-title">BrowseComp-Plus <span>· 830 questions</span></p><div class="chart" data-chart="acc" data-bench="bcp"></div></div>
+        </div>
+        <p class="chart-note">Self-Consistency votes over the source outputs and is reported only where the paper has it. Best-of-N reports the original grade of the judge-selected source, and Reflexion allows up to three executions. Hover or focus a row for its cost and its difference from Control.</p>
+      </div>
+
+      <div class="sub-head">
+        <h3>Full results</h3>
+        <p>Table 2 of the paper. Bold and underline mark the best and second-best task success on each benchmark.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Model for the results table">
+        <button class="tab" role="tab" type="button" data-line="gpt" aria-selected="true"><code>gpt-5.6-luna</code></button>
+        <button class="tab" role="tab" type="button" data-line="claude" aria-selected="false"><code>claude-sonnet-5</code></button>
+      </div>
+      <p class="table-meta" id="table-meta"></p>
+      <div class="table-wrap" role="tabpanel">
+        <table class="results">
+          <thead>
+            <tr>
+              <th scope="col">Method</th>
+              <th scope="col">Terminal-Bench 2.0</th>
+              <th scope="col">Spider2-Lite</th>
+              <th scope="col">AndroidWorld</th>
+              <th scope="col">BrowseComp-Plus</th>
+              <th scope="col">Average</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+      <div class="defs">
+        <div><b>Task success</b> · share of tasks the benchmark grades as solved (%), the large number in each cell.</div>
+        <div><b>Cost</b> · source-generation tokens plus measured construction and execution tokens, relative to Control (×).</div>
+        <div><b>SC, Best-of-N</b> · references that read the source pool without a new execution.</div>
+        <div><b>—</b> · unavailable or inapplicable.</div>
+      </div>
+
+      <div class="sub-head" id="other-models">
+        <h3>A lower-priced model matches higher-priced ones</h3>
+        <p>Table 5 of the paper. Bold and underline mark the best and second-best value in each row of a block.</p>
+      </div>
+      <p class="table-meta"><code>gpt-5.6-luna</code> with ReGE against one unguided execution of other GPT models, on 468 tasks: the first half of Terminal-Bench 2.0, Spider2-Lite and AndroidWorld by task ID and the 300 BrowseComp-Plus queries of the ablations.</p>
+      <div class="table-wrap">
+        <table class="results models">
+          <thead>
+            <tr class="groups"><th></th><th colspan="5">Task success (%)</th><th colspan="5" class="split">Cost per task (USD)</th></tr>
+            <tr>
+              <th scope="col">Benchmark <span class="n">tasks</span></th>
+              <th scope="col">gpt-5.6-<br>luna</th>
+              <th scope="col" class="ours">gpt-5.6-luna<br>+ ReGE</th>
+              <th scope="col">gpt-5.6-<br>terra</th>
+              <th scope="col">gpt-5.6-<br>sol</th>
+              <th scope="col">gpt-6-<br>luna</th>
+              <th scope="col" class="ours split">ReGE<br>incl. pool</th>
+              <th scope="col" class="ours">ReGE<br>existing pool</th>
+              <th scope="col">gpt-5.6-<br>terra</th>
+              <th scope="col">gpt-5.6-<br>sol</th>
+              <th scope="col">gpt-6-<br>luna</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Terminal-Bench 2.0 <span class="n">44</span></td><td>40.9</td><td class="ours second">63.6</td><td>59.1</td><td class="best">68.2</td><td>34.1</td><td class="ours split">0.187</td><td class="ours second">0.028</td><td>0.251</td><td>0.601</td><td class="best">0.005</td></tr>
+            <tr><td>Spider2-Lite <span class="n">68</span></td><td class="second">66.2</td><td class="ours best">77.9</td><td class="second">66.2</td><td>63.2</td><td class="second">66.2</td><td class="ours split">0.043</td><td class="ours second">0.007</td><td>0.044</td><td>0.090</td><td class="best">0.001</td></tr>
+            <tr><td>AndroidWorld <span class="n">56</span></td><td>50.0</td><td class="ours">48.2</td><td class="second">55.4</td><td class="best">57.1</td><td>44.6</td><td class="ours split">0.313</td><td class="ours second">0.062</td><td>0.568</td><td>1.138</td><td class="best">0.025</td></tr>
+            <tr><td>BrowseComp-Plus <span class="n">300</span></td><td>70.0</td><td class="ours best">80.0</td><td>75.0</td><td class="second">79.3</td><td>52.7</td><td class="ours split">0.314</td><td class="ours second">0.038</td><td>0.615</td><td>1.237</td><td class="best">0.004</td></tr>
+            <tr class="avg"><td>Average</td><td>56.8</td><td class="ours best">67.4</td><td>63.9</td><td class="second">67.0</td><td>49.4</td><td class="ours split">0.214</td><td class="ours second">0.034</td><td>0.370</td><td>0.766</td><td class="best">0.009</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="defs">
+        <div><b>Other models</b> · one execution per task without guidance, with the prompts, tools, step limits and graders of the <code>gpt-5.6-luna</code> Control runs.</div>
+        <div><b>Cost per task</b> · list price of the input and output tokens, in USD per million: 0.20 / 1.20 for <code>gpt-5.6-luna</code>, 2.00 / 12.00 for terra, 4.00 / 20.00 for sol and 0.10 / 0.50 for <code>gpt-6-luna</code>.</div>
+        <div><b>Incl. / existing pool</b> · the cost of ReGE with the four source attempts per task, and when the source pool already exists.</div>
+      </div>
+
+      <div class="sub-head">
+        <h3>Guidance that is cheap to construct</h3>
+        <p>Mean tokens per query on matched BrowseComp-Plus queries (Table 3 of the paper).</p>
+      </div>
+      <div class="card">
+        <div class="card-top">
+          <div class="legend" aria-hidden="true">
+            <span class="key"><span class="swatch build"></span>Guidance construction</span>
+            <span class="key"><span class="swatch exec"></span>Student execution</span>
+          </div>
+        </div>
+        <div class="multiples">
+          <div class="panel"><p class="panel-title"><code>gpt-5.6-luna</code></p><div class="chart" data-chart="cost" data-line="gpt"></div></div>
+          <div class="panel"><p class="panel-title"><code>claude-sonnet-5</code></p><div class="chart" data-chart="cost" data-line="claude"></div></div>
+        </div>
+        <p class="chart-note">Input plus output tokens, including failures and excluding source generation. ReGE-Syn students use more tokens than AggAgent's, but construction drops by 98.2% (GPT) and 95.5% (Claude), so the totals fall by 15.7% and 35.4%; task success is 75.2% vs 75.3% (GPT) and 86.2% vs 87.0% (Claude).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="findings">
+    <div class="container">
+      <div class="eyebrow"><span class="num">03</span>Findings</div>
+      <h2>What makes recorded experience useful</h2>
+      <p class="lede">Ablations on BrowseComp-Plus with <code>claude-sonnet-5</code>, and a breakdown of all benchmarks by how many source attempts succeeded.</p>
+      <div class="findings">
+        <div class="finding">
+          <div class="kicker">The experience, not the coach</div>
+          <div class="big">75.7% → 88.3% <small>no attempts vs four</small></div>
+          <p>A coach that sees no source attempts (Closed-book) solves 75.7% of 300 queries, close to Control's 74.7%. One recorded attempt lifts success to 84.3%, two to 86.3% and four to 88.3%.</p>
+        </div>
+        <div class="finding">
+          <div class="kicker">Process records, not just answers</div>
+          <div class="big">14.6 → 9.1 <small>mean student steps</small></div>
+          <p>Synthesizing from final submitted answers only (FAO) solves 85.0% instead of 88.3%. On queries with a single submitted source answer (6.3% of queries), full records solve 94.7% and FAO 47.4%; even when all four sources submit answers, mean student steps fall from 8.9 to 4.8.</p>
+        </div>
+        <div class="finding">
+          <div class="kicker">Mixed pools gain the most</div>
+          <div class="big">+13.0 to +48.0 <small>points over Control</small></div>
+          <p>When some but not all source attempts succeed, ReGE-Syn gains 13.0–21.6 points on Terminal-Bench 2.0, Spider2-Lite and AndroidWorld, and 48.0 (GPT) and 35.2 (Claude) on BrowseComp-Plus. When every attempt fails, gains are small and inconsistent.</p>
+        </div>
+        <div class="finding">
+          <div class="kicker">Joint synthesis keeps guidance short</div>
+          <div class="big">5,063 <small>characters vs 20,571</small></div>
+          <p>On matched queries, the joint guide is about a quarter as long as Direct history or Independent summaries, solves 88.3% against 88.3% and 86.9%, and uses 19.8% and 31.8% fewer total tokens. Other forms also work: ReGE-A (explanation and answer) reaches 90.7% at 0.68× the total tokens, though with <code>gpt-5.6-luna</code> on 100 queries it solves 80% versus 82%, and ReGE-Sel reaches 89.3% with 21% fewer student tokens.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt" id="cases">
+    <div class="container">
+      <div class="eyebrow"><span class="num">04</span>Cases</div>
+      <h2>From recorded experience to a fresh execution</h2>
+      <p class="lede">Two <code>claude-sonnet-5</code> runs from the paper. The student checks the guidance against its own environment and changes course where needed.</p>
+      <div class="cases">
+        <article class="case">
+          <div class="case-head">
+            <div class="where"><span class="chip">Terminal-Bench 2.0</span><span class="chip">db-wal-recovery</span></div>
+            <h3>Recovering a database from its log</h3>
+          </div>
+          <div class="stage" data-n="1">
+            <div class="label">Recorded experience</div>
+            <p>Successful attempts identify the XOR decoding key <code>0x42</code> for the database's write-ahead log. Another attempt opens <code>main.db</code> before making a backup and loses <code>main.db-wal</code>, leaving the recovery incomplete.</p>
+          </div>
+          <div class="stage" data-n="2">
+            <div class="label">Synthesized guidance</div>
+            <p>The guide keeps the decoding key and tells the student to back up both files before opening the database, decode and check the log, and then recover the records.</p>
+          </div>
+          <div class="stage outcome" data-n="3">
+            <div class="label">Student verification and adjustment</div>
+            <p>The student backs up its files, verifies the key and the decoded log, and moves the <code>main.db-shm</code> cleanup, which the guide offered only as a fallback, ahead of replacing the log and opening the database. It exports 11 ordered records to <code>recovered.json</code> and passes all seven official tests.</p>
+          </div>
+        </article>
+        <article class="case">
+          <div class="case-head">
+            <div class="where"><span class="chip">AndroidWorld</span><span class="chip">BrowserMultiply</span></div>
+            <h3>Completing a browser task from unsuccessful attempts</h3>
+          </div>
+          <div class="stage" data-n="1">
+            <div class="label">Recorded experience</div>
+            <p>Repeated taps on <code>task.html</code> leave the file manager unchanged. Two attempts discover the route long-press → More options → Open with → Chrome, but all four exhaust their 22-step budgets before completing the task.</p>
+          </div>
+          <div class="stage" data-n="2">
+            <div class="label">Synthesized guidance</div>
+            <p>The guide keeps this opening sequence, warns against repeated single taps and describes Chrome's setup prompts. It asks the student to read the five numbers from the page and submit their product.</p>
+          </div>
+          <div class="stage outcome" data-n="3">
+            <div class="label">Student verification and adjustment</div>
+            <p>The student uses the opening sequence immediately. When dismissing Chrome's sync prompt returns it to the file manager, it repeats Open with → Chrome, records 9, 10, 9, 5 and 5 during the five clicks and enters 20,250. The page shows "Success!" after 19 steps, within the same 22-step budget.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="citation">
+    <div class="container">
+      <div class="eyebrow"><span class="num">05</span>Citation</div>
+      <h2>BibTeX</h2>
+      <p class="lede">If you find ReGE useful, please cite our paper.</p>
+      <div class="bib">
+        <button class="copy" type="button" data-copy="bibtex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span></button>
+        <!-- TODO: replace this placeholder with the Google Scholar BibTeX once the paper is indexed (also in README.md). -->
+<pre id="bibtex">@article{rege2026,
+  title   = {ReGE: Stronger Agents through Experience Synthesis},
+  author  = {Liang, Jiarong and Wang, Yubo and Liu, Zijie and Zhang, Yuxuan and Nie, Ping and Chen, Wenhu},
+  journal = {arXiv preprint arXiv:2610.33861},
+  year    = {2026}
+}</pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <span>ReGE · University of Waterloo · UNC Chapel Hill · University of British Columbia</span>
+    <nav aria-label="Footer">
+      <a href="https://arxiv.org/abs/2610.33861">Paper</a>
+      <a href="https://github.com/TIGER-AI-Lab/ReGE">Code</a>
+    </nav>
+  </div>
+</footer>
+
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+<script src="static/js/main.js" defer></script>
+</body>
+</html>

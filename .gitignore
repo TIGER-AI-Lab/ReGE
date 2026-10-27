@@ -1,0 +1,13 @@
+# environments and caches
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+
+# benchmarks, external code, run records and outputs stay out of git
+data/
+result/
+logs/
+third_party/
+*.log

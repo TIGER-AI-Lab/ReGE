@@ -1,0 +1,17 @@
+# Main environment (Python 3.11+). AndroidWorld runs in its own environment, see the README.
+openai>=2.0
+httpx>=0.27
+numpy>=1.26
+pandas>=2.0
+pyyaml>=6.0
+
+# Spider2-Lite: the official evaluation_suite/evaluate.py imports these at module level
+tqdm>=4.66
+google-cloud-bigquery>=3.0
+
+# AggAgent (third_party/AggAgent)
+litellm>=1.96
+rouge-score>=0.1.2
+
+# Optional: BCP_DENSE_GPU=<index> keeps the BrowseComp-Plus dense index on a GPU
+# torch>=2.4
