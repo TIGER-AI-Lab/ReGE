@@ -8,8 +8,7 @@
 
 <sup>1</sup>University of Waterloo · <sup>2</sup>University of North Carolina at Chapel Hill · <sup>3</sup>University of British Columbia
 
-<!-- TODO: replace the X and LinkedIn links below with the announcement posts (also in homepage/index.html). -->
-[**🌐 Homepage**](https://tiger-ai-lab.github.io/ReGE/) | [**📄 Paper**](https://arxiv.org/abs/2610.33861) | [**𝕏 X**](https://x.com/TODO) | [**💼 LinkedIn**](https://www.linkedin.com/TODO)
+[**🌐 Homepage**](https://tiger-ai-lab.github.io/ReGE/) | [**📄 Paper**](https://arxiv.org/abs/2610.33861) | [**𝕏 X**](https://x.com/JLiang51825/status/2115153311292915976) | [**💼 LinkedIn**](https://www.linkedin.com/posts/jiarong-liang-b2a8a5239_aiagents-llm-machinelearning-share-7520920602505969665-a3mM/)
 
 </div>
 
